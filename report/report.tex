@@ -1,0 +1,23 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Ising Model Report}
+\author{Rose Dennis and John Kaushagen}
+\date{April 2018}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Given a lattice $\Lambda$ we let each lattice point take the value $-1$  or $1$
+representing the spin configuration at that point. The Hamiltonian function for
+the lattice is defined as
+\[
+    H(\sigma) = -\sum_{\langle i,j\rangle}J_{ij}\sigma_i\sigma_j
+    -\mu\sum_{j}h_j\sigma_j
+\]
+
+Our first thing to do is a 2x2 simulation. We consider a ferromagnetic material
+uniform interaction $J_{ij}=1$ for all $i,j$, and zero external field $\mu=0$.
+\end{document}
