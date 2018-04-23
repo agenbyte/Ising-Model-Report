@@ -6,3 +6,11 @@ __pycache__/
 
 *.py[cdf~]
 
+*.aux
+*.fls
+*.log
+*.pdf
+*.fdb*
+*.sync*
+.vscode/
+.pytest_cache/
