@@ -1,102 +1,90 @@
+'''
+Contains code for simulating the Ising model
+on a square grid.
+'''
 import numpy as np
-import matplotlib.pyplot as plt
-# import matplotlib.animation as animation
 
 
 class Simulation(object):
-
-    # This function is called when you create a Simulation object
-    # a = Simulation(100, 100)
-    # will create a new simulation with size 100 and temperature
-    # 100. We dont config has a default of None which I set to
-    # generate a random spin configuration.
-    def __init__(self, size, temperature, config=None, periodic=True):
+    '''
+    The Simulation object stores data about the running simulation.
+    It also allows us to do some cool things.
+    If you give it your own configuration, it must have periodic
+    boundary conditions already
+    '''
+    def __init__(self, size, temperature, config=None):
         if config is None:
-            self.config = self.generate_random_lattice(size, periodic=True)
+            self.config = self.generate_random_lattice(size)
         else:
             self.config = config
         self.size = size
-        # So this isn't really temperature anymore but like whatevers
-        # TODO
-        self.periodic = periodic
         self.temperature = temperature
         self.energy_history = []
         self.energy = self.calculate_energy()
         self.energy_history.append(self.energy)
 
-    def calculate_energy(self):
-        '''
-        Computes the energy of the system. Avoiding using this
-        method frequently. It is very slow.
-        '''
-        # There are two things we need to worry about here. We need to
-        # know if there are periodic boundary conditions going on and
-        # thats it just one thing
-        if not self.periodic:
-            # Do something different. IDK yet
-            pass
-        else:
-            energy = 0
-            for i in range(1, self.size-1):
-                for j in range(1, self.size-1):
-                    energy += self.config[i-1, j] * self.config[i, j] +\
-                              self.config[i+1, j] * self.config[i, j] +\
-                              self.config[i, j-1] * self.config[i, j] +\
-                              self.config[i, j+1] * self.config[i, j]
-            return energy/4.0
+    def step(self):
+        lattice_site = self.choose_random_lattice_site()
+        energy_change = self.compute_energy_change(lattice_site)
+        acceptance_probability = min(1, np.exp(self.temperature*energy_change))
+        if np.random.uniform() < acceptance_probability:
+            self.flip_lattice_site(lattice_site)
+            self.energy += energy_change
+            self.config = set_period_boundary(self.config)
 
-    def simulate_me_daddy(self, nsteps):
+    def step_n_times(self, nsteps):
         for __ in range(nsteps):
             self.step()
             self.energy_history.append(self.energy)
 
-    def generate_random_lattice(self, size, periodic=False):
+    def calculate_energy(self):
+        '''
+        Computes the energy of the system
+        '''
+        energy = 0
+        for i in range(1, self.size-1):
+            for j in range(1, self.size-1):
+                energy += self.config[i-1, j] * self.config[i, j] +\
+                          self.config[i+1, j] * self.config[i, j] +\
+                          self.config[i, j-1] * self.config[i, j] +\
+                          self.config[i, j+1] * self.config[i, j]
+        return energy/4.0
+
+    def generate_random_lattice(self, size):
         '''
         Generates a 2-dimensional lattice of -1's and 1's
         and applies periodic boundary conditions to the system
         '''
-        if periodic:
-            size = size + 2
+        size = size + 2
         config = 2*np.random.randint(0, high=2, size=(size, size)) - 1
-        if periodic:
-            config = self._set_ghost_cells(config)
+        config = set_period_boundary(config)
         return config
-
-    def step(self):
-        # Need to enforce the boundary conditions
-        # Choose a site
-        lattice_site = self.choose_random_lattice_site()
-        # Now we need to compute the change in energy if we were to flip
-        # that lattice site
-        delta_energy = self.get_energy_change_from_lattice_flip(lattice_site)
-        acceptance_probability = min(1, np.exp(self.temperature*delta_energy))
-        if np.random.uniform() < acceptance_probability:
-            self.flip_lattice_site(lattice_site)
-            self.energy += delta_energy
-            self.config = self._set_ghost_cells(self.config)
 
     def flip_lattice_site(self, lattice_site):
         self.config[lattice_site] *= -1
 
-
-    def get_energy_change_from_lattice_flip(self, lattice_site):
-        x = lattice_site[0]
-        y = lattice_site[1]
-        delta_energy = 2 * (-self.config[x, y] * self.config[x-1, y] +\
-                            -self.config[x, y] * self.config[x+1, y] +\
-                            -self.config[x, y] * self.config[x, y-1] +\
-                            -self.config[x, y] * self.config[x, y+1])
+    def compute_energy_change(self, lattice_site):
+        print(self.config[lattice_site])
+        print(lattice_site)
+        left = lattice_site - (1, 0)
+        right = lattice_site + (1, 0)
+        up = lattice_site + (0, 1)
+        down = lattice_site - (0, 1)
+        delta_energy = -2 * self.config[lattice_site] *\
+                            (self.config[left] + self.config[right] +\
+                             self.config[up] + self.config[down])
+        print(delta_energy)
         return delta_energy
 
     def choose_random_lattice_site(self):
-        fi, fj = np.random.randint(1, high=self.size+1, size=(2))
-        return fi, fj
+        flip_site = np.random.randint(1, high=self.size+1, size=(2))
+        return flip_site
 
-    def _set_ghost_cells(self, config):
-        left_slice = -1
-        right_slice = 1
-        config[:, left_slice] = config[:, right_slice]
-        config[:, 0] = config[:, -2]
-        config[-1, :] = config[:, 1]
-        config[0, :] = config[-2, 0]
-        return config
+
+
+def set_period_boundary(config):
+    config[:, -1] = config[:, 1]
+    config[:, 0] = config[:, -2]
+    config[-1, :] = config[1, :]
+    config[0, :] = config[-2, :]
+    return config
