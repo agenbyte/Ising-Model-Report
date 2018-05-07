@@ -12,31 +12,54 @@ ENERGY_ARRAY = np.zeros(NTEMPS)
 MAGN_ARRAY = np.zeros(NTEMPS)
 MAGS_ARRAY = np.zeros(NTEMPS)
 
+def ising_step(lat, size, temperature):
+    # Choose a random lattice site
+    si, sj = np.random.randint(1, size+1, size=2)
+    neighbors = np.array(lat[si,sj]!=np.array(
+            [lat[si+1, sj], lat[si-1, sj], lat[si,sj+1], lat[si,sj-1]]
+        ), dtype=int)
+    delta_E = 4 - 2*sum(neighbors)
+    p = min(1, np.exp(-delta_E/temperature))
+    if np.random.uniform() < p:
+        lat[si, sj] *= -1
+        lat[ 0,  1:-1] = lat[-2,  1:-1]
+        lat[-1,  1:-1] = lat[ 1,  1:-1]
+        lat[ 1:-1,  0] = lat[ 1:-1, -2]
+        lat[ 1:-1, -1] = lat[ 1:-1,  1]
+        lat[0, 0] = lat[-1, 0] = lat[0, -1] = lat[-1, -1] = 0
+    else:
+        delta_E = 0
+    return lat, delta_E
+
+
 def ising_simulation(size, temperature, niterations, lat):
     ehist = np.zeros(niterations+1)
     mhist = np.zeros(niterations+1)
     e0 = calc_energy(lat, size)
     ehist[0] = e0
     for step in range(niterations):
-        si, sj = np.random.randint(1, size+1, size=2)
-        neighbors = np.array(lat[si,sj]!=np.array(
-                [lat[si+1, sj], lat[si-1, sj], lat[si,sj+1], lat[si,sj-1]]
-            ), dtype=int)
-        delta_E = 4 - 2*sum(neighbors)
-        p = min(1, np.exp(-delta_E/temperature))
-        if np.random.uniform() < p:
-            lat[si, sj] *= -1
-            ehist[step+1] = ehist[step] + delta_E
-            mhist[step+1] = abs(np.sum(lat[1:-1,1:-1])/size**2)
-            # Reset the periodic boundary conditions
-            lat[ 0,  1:-1] = lat[-2,  1:-1]
-            lat[-1,  1:-1] = lat[ 1,  1:-1]
-            lat[ 1:-1,  0] = lat[ 1:-1, -2]
-            lat[ 1:-1, -1] = lat[ 1:-1,  1]
-            lat[0, 0] = lat[-1, 0] = lat[0, -1] = lat[-1, -1] = 0
-        else:
-            ehist[step+1] = ehist[step]
-            mhist[step+1] = abs(np.sum(lat[1:-1,1:-1])/size**2)
+        lat, delta_E = ising_step(lat, size, temperature)
+        ehist[step+1] = ehist[step] + delta_E
+        mhist[step+1] = abs(np.sum(lat[1:-1,1:-1])/size**2)
+        # si, sj = np.random.randint(1, size+1, size=2)
+        # neighbors = np.array(lat[si,sj]!=np.array(
+        #         [lat[si+1, sj], lat[si-1, sj], lat[si,sj+1], lat[si,sj-1]]
+        #     ), dtype=int)
+        # delta_E = 4 - 2*sum(neighbors)
+        # p = min(1, np.exp(-delta_E/temperature))
+        # if np.random.uniform() < p:
+        #     lat[si, sj] *= -1
+        #     ehist[step+1] = ehist[step] + delta_E
+        #     mhist[step+1] = abs(np.sum(lat[1:-1,1:-1])/size**2)
+        #     # Reset the periodic boundary conditions
+        #     lat[ 0,  1:-1] = lat[-2,  1:-1]
+        #     lat[-1,  1:-1] = lat[ 1,  1:-1]
+        #     lat[ 1:-1,  0] = lat[ 1:-1, -2]
+        #     lat[ 1:-1, -1] = lat[ 1:-1,  1]
+        #     lat[0, 0] = lat[-1, 0] = lat[0, -1] = lat[-1, -1] = 0
+        # else:
+        #     ehist[step+1] = ehist[step]
+        #     mhist[step+1] = abs(np.sum(lat[1:-1,1:-1])/size**2)
     return ehist, mhist
 
 def calc_energy(lat, size):
