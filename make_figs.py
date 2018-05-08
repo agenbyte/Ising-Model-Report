@@ -24,7 +24,8 @@ def make_warmup_time_figure():
     plt.plot(e)
     plt.xlabel('Time-Step')
     plt.ylabel('Energy per Atom')
-    plt.savefig(out_path)
+    plt.show()
+    #plt.savefig(out_path)
 
 
 def make_pcolor_figures():
@@ -154,5 +155,5 @@ def make_acvf_figures():
 
 if __name__ == '__main__':
     #make_pcolor_figures()
-    #make_warmup_time_figure()
-    make_acvf_figures()
+    make_warmup_time_figure()
+    #make_acvf_figures()
